@@ -13,3 +13,9 @@ async def get_or_create_user(session: AsyncSession, telegram_id: int, language: 
         await session.commit()
         await session.refresh(user)
     return user
+
+
+async def mark_active(session: AsyncSession, user_id: int) -> None:
+    user = await session.get(User, user_id)
+    user.status = "active"
+    await session.commit()

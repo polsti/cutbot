@@ -19,6 +19,7 @@ if config.config_file_name is not None:
 from bot.config import settings
 from bot.models.base import Base
 from bot.models.user import User  # noqa: F401  (registers the table with Base.metadata)
+from bot.models.profile import Profile  # noqa: F401
 
 target_metadata = Base.metadata
 
