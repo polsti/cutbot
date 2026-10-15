@@ -14,7 +14,9 @@ async def cmd_help(message: Message) -> None:
     await message.answer(
         "Команды:\n"
         "/start — профиль\n"
+        "/add — записать приём пищи по фото\n"
+        "/today — сводка за сегодня\n"
         "/help — справка\n\n"
-        "Остальное (/add, /today, /fridge) — дальше по плану.\n\n"
+        "Остальное (/fridge и т.д.) — дальше по плану.\n\n"
         f"<b>{random.choice(WOLF_QUOTES)}</b>"
     )

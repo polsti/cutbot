@@ -93,6 +93,10 @@ PACE_KB = InlineKeyboardMarkup(
     ]]
 )
 
+SHARE_MEAL_KB = InlineKeyboardMarkup(
+    inline_keyboard=[[InlineKeyboardButton(text="📸 Поделиться едой", callback_data="share_meal")]]
+)
+
 
 @router.message(CommandStart())
 async def cmd_start(message: Message, state: FSMContext) -> None:
@@ -291,5 +295,6 @@ async def finish_onboarding(message: Message, state: FSMContext) -> None:
         f"🍞 Углеводы: {macros['carbs_g']} г\n"
         f"💧 Вода: {water_ml} мл\n\n"
         f"<b>{random.choice(WOLF_QUOTES)}</b>\n\n"
-        "Дневник и трекинг — дальше. Думай."
+        "Дневник и трекинг — дальше. Думай.",
+        reply_markup=SHARE_MEAL_KB,
     )

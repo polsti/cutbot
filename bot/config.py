@@ -6,6 +6,7 @@ class Settings(BaseSettings):
 
     bot_token: str
     database_url: str
+    gemini_api_key: str
 
 
 settings = Settings()
