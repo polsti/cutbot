@@ -18,3 +18,8 @@ async def save_profile(session: AsyncSession, user_id: int, **fields) -> Profile
     await session.commit()
     await session.refresh(profile)
     return profile
+
+
+async def get_profile(session: AsyncSession, user_id: int) -> Profile | None:
+    result = await session.execute(select(Profile).where(Profile.user_id == user_id))
+    return result.scalar_one_or_none()
