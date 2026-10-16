@@ -14,12 +14,18 @@ async def save_meal_entry(session: AsyncSession, user_id: int, **fields) -> Meal
     return entry
 
 
-async def get_today_totals(session: AsyncSession, user_id: int) -> dict:
+async def get_today_entries(session: AsyncSession, user_id: int) -> list[MealEntry]:
     start_of_day = datetime.now(timezone.utc).replace(hour=0, minute=0, second=0, microsecond=0)
     result = await session.execute(
-        select(MealEntry).where(MealEntry.user_id == user_id, MealEntry.logged_at >= start_of_day)
+        select(MealEntry)
+        .where(MealEntry.user_id == user_id, MealEntry.logged_at >= start_of_day)
+        .order_by(MealEntry.logged_at)
     )
-    entries = result.scalars().all()
+    return list(result.scalars().all())
+
+
+async def get_today_totals(session: AsyncSession, user_id: int) -> dict:
+    entries = await get_today_entries(session, user_id)
     return {
         "count": len(entries),
         "calories": sum(e.calories for e in entries),

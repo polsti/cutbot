@@ -5,7 +5,7 @@ from aiogram.fsm.state import State, StatesGroup
 from aiogram.types import CallbackQuery, InlineKeyboardButton, InlineKeyboardMarkup, Message
 
 from bot.models.base import async_session
-from bot.services.meals import get_today_totals, get_week_totals, save_meal_entry
+from bot.services.meals import get_today_entries, get_today_totals, get_week_totals, save_meal_entry
 from bot.services.profiles import get_profile
 from bot.services.users import get_or_create_user
 from bot.services.vision import analyze_meal_photo
@@ -145,28 +145,50 @@ async def on_cancel_meal(callback: CallbackQuery, state: FSMContext) -> None:
     await callback.answer()
 
 
+WEEK_KB = InlineKeyboardMarkup(
+    inline_keyboard=[[InlineKeyboardButton(text="📅 Неделя", callback_data="show_week")]]
+)
+
+DAY_NAMES = ["Пн", "Вт", "Ср", "Чт", "Пт", "Сб", "Вс"]
+
+
 @router.message(Command("today"))
 async def cmd_today(message: Message) -> None:
+    text = await build_today_text(message.from_user.id)
+    await message.answer(text, reply_markup=WEEK_KB)
+
+
+async def build_today_text(telegram_id: int) -> str:
     async with async_session() as session:
-        user = await get_or_create_user(session, message.from_user.id)
+        user = await get_or_create_user(session, telegram_id)
         profile = await get_profile(session, user.id)
-        totals = await get_today_totals(session, user.id)
+        entries = await get_today_entries(session, user.id)
 
     if profile is None:
-        await message.answer("Сначала профиль. /start — и погнали.")
-        return
+        return "Сначала профиль. /start — и погнали."
 
-    if totals["count"] == 0:
-        await message.answer("Сегодня пока пусто. Жми /start → 'Поделиться едой' и добавляй.")
-        return
+    if not entries:
+        return "Сегодня пока пусто. /add — и добавляй."
 
+    totals = {
+        "calories": sum(e.calories for e in entries),
+        "protein_g": sum(e.protein_g for e in entries),
+        "fat_g": sum(e.fat_g for e in entries),
+        "carbs_g": sum(e.carbs_g for e in entries),
+    }
     cal_left = profile.target_calories - totals["calories"]
     protein_left = profile.protein_g - totals["protein_g"]
     fat_left = profile.fat_g - totals["fat_g"]
     carbs_left = profile.carbs_g - totals["carbs_g"]
 
-    await message.answer(
-        f"Сегодня съедено ({totals['count']} приём(ов)):\n\n"
+    meal_lines = [
+        f"{e.logged_at.strftime('%H:%M')} — {e.dish_name}: {e.calories} ккал" for e in entries
+    ]
+
+    return (
+        "Сегодня:\n\n"
+        + "\n".join(meal_lines)
+        + "\n\n"
         f"🔥 {totals['calories']} / {profile.target_calories} ккал (осталось {cal_left})\n"
         f"🥩 {totals['protein_g']} / {profile.protein_g} г белка (осталось {protein_left})\n"
         f"🧈 {totals['fat_g']} / {profile.fat_g} г жиров (осталось {fat_left})\n"
@@ -175,13 +197,22 @@ async def cmd_today(message: Message) -> None:
     )
 
 
-DAY_NAMES = ["Пн", "Вт", "Ср", "Чт", "Пт", "Сб", "Вс"]
-
-
 @router.message(Command("stats"))
 async def cmd_stats(message: Message) -> None:
+    text = await build_week_text(message.from_user.id)
+    await message.answer(text)
+
+
+@router.callback_query(F.data == "show_week")
+async def on_show_week(callback: CallbackQuery) -> None:
+    text = await build_week_text(callback.from_user.id)
+    await callback.message.answer(text)
+    await callback.answer()
+
+
+async def build_week_text(telegram_id: int) -> str:
     async with async_session() as session:
-        user = await get_or_create_user(session, message.from_user.id)
+        user = await get_or_create_user(session, telegram_id)
         days = await get_week_totals(session, user.id)
 
     lines = []
@@ -201,6 +232,4 @@ async def cmd_stats(message: Message) -> None:
         avg_calories = round(sum(d["calories"] for d in logged_days) / len(logged_days))
         avg_line = f"\n\nСреднее за дни с записями: {avg_calories} ккал"
 
-    await message.answer(
-        "Последние 7 дней:\n\n" + "\n".join(lines) + avg_line + f"\n\n{CONFIRM}"
-    )
+    return "Последние 7 дней:\n\n" + "\n".join(lines) + avg_line + f"\n\n{CONFIRM}"
