@@ -16,6 +16,7 @@ async def cmd_help(message: Message) -> None:
         "/start — профиль\n"
         "/add — записать приём пищи по фото\n"
         "/today — сводка за сегодня\n"
+        "/stats — за последние 7 дней\n"
         "/help — справка\n\n"
         "Остальное (/fridge и т.д.) — дальше по плану.\n\n"
         f"<b>{random.choice(WOLF_QUOTES)}</b>"

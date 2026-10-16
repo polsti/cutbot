@@ -1,4 +1,4 @@
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -27,3 +27,29 @@ async def get_today_totals(session: AsyncSession, user_id: int) -> dict:
         "fat_g": sum(e.fat_g for e in entries),
         "carbs_g": sum(e.carbs_g for e in entries),
     }
+
+
+async def get_week_totals(session: AsyncSession, user_id: int) -> list[dict]:
+    """Per-day totals for the last 7 days (today + 6 previous), oldest first.
+    Days with no entries are included with zero totals, so gaps are visible."""
+    today = datetime.now(timezone.utc).replace(hour=0, minute=0, second=0, microsecond=0)
+    week_start = today - timedelta(days=6)
+
+    result = await session.execute(
+        select(MealEntry).where(MealEntry.user_id == user_id, MealEntry.logged_at >= week_start)
+    )
+    entries = result.scalars().all()
+
+    days = []
+    for i in range(7):
+        day = week_start + timedelta(days=i)
+        day_entries = [e for e in entries if day <= e.logged_at < day + timedelta(days=1)]
+        days.append({
+            "date": day.date(),
+            "count": len(day_entries),
+            "calories": sum(e.calories for e in day_entries),
+            "protein_g": sum(e.protein_g for e in day_entries),
+            "fat_g": sum(e.fat_g for e in day_entries),
+            "carbs_g": sum(e.carbs_g for e in day_entries),
+        })
+    return days

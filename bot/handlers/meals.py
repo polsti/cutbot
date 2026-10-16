@@ -5,7 +5,7 @@ from aiogram.fsm.state import State, StatesGroup
 from aiogram.types import CallbackQuery, InlineKeyboardButton, InlineKeyboardMarkup, Message
 
 from bot.models.base import async_session
-from bot.services.meals import get_today_totals, save_meal_entry
+from bot.services.meals import get_today_totals, get_week_totals, save_meal_entry
 from bot.services.profiles import get_profile
 from bot.services.users import get_or_create_user
 from bot.services.vision import analyze_meal_photo
@@ -125,9 +125,16 @@ async def on_confirm_meal(callback: CallbackQuery, state: FSMContext) -> None:
             fat_g=data["fat_g"],
             carbs_g=data["carbs_g"],
         )
+        profile = await get_profile(session, user.id)
+        totals = await get_today_totals(session, user.id)
 
     await state.clear()
-    await callback.message.edit_text(f"{CONFIRM} Записано в дневник.")
+
+    target_line = f" / {profile.target_calories}" if profile else ""
+    await callback.message.edit_text(
+        f"{CONFIRM} Записано в дневник.\n\n"
+        f"Итого сегодня: {totals['calories']}{target_line} ккал ({totals['count']} приём(ов))"
+    )
     await callback.answer()
 
 
@@ -165,4 +172,35 @@ async def cmd_today(message: Message) -> None:
         f"🧈 {totals['fat_g']} / {profile.fat_g} г жиров (осталось {fat_left})\n"
         f"🍞 {totals['carbs_g']} / {profile.carbs_g} г углеводов (осталось {carbs_left})\n\n"
         f"{CONFIRM}"
+    )
+
+
+DAY_NAMES = ["Пн", "Вт", "Ср", "Чт", "Пт", "Сб", "Вс"]
+
+
+@router.message(Command("stats"))
+async def cmd_stats(message: Message) -> None:
+    async with async_session() as session:
+        user = await get_or_create_user(session, message.from_user.id)
+        days = await get_week_totals(session, user.id)
+
+    lines = []
+    for day in days:
+        label = f"{DAY_NAMES[day['date'].weekday()]} {day['date'].strftime('%d.%m')}"
+        if day["count"] == 0:
+            lines.append(f"{label}: — (ничего не записано)")
+        else:
+            lines.append(
+                f"{label}: {day['calories']} ккал ({day['count']} приём(ов)) "
+                f"— Б:{day['protein_g']} Ж:{day['fat_g']} У:{day['carbs_g']}"
+            )
+
+    logged_days = [d for d in days if d["count"] > 0]
+    avg_line = ""
+    if logged_days:
+        avg_calories = round(sum(d["calories"] for d in logged_days) / len(logged_days))
+        avg_line = f"\n\nСреднее за дни с записями: {avg_calories} ккал"
+
+    await message.answer(
+        "Последние 7 дней:\n\n" + "\n".join(lines) + avg_line + f"\n\n{CONFIRM}"
     )
