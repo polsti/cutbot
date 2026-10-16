@@ -17,7 +17,7 @@ from bot.services.calculations import (
 )
 from bot.services.profiles import save_profile
 from bot.services.users import get_or_create_user, mark_active
-from bot.style import CONFIRM, GENDER_LABELS, GOAL_LINES, WOLF_QUOTES
+from bot.voices import DEFAULT_VOICE, get_voice
 
 router = Router()
 
@@ -36,12 +36,15 @@ class Onboarding(StatesGroup):
     pace = State()
 
 
-GENDER_KB = InlineKeyboardMarkup(
-    inline_keyboard=[[
-        InlineKeyboardButton(text=GENDER_LABELS["m"], callback_data="gender:m"),
-        InlineKeyboardButton(text=GENDER_LABELS["f"], callback_data="gender:f"),
-    ]]
-)
+def build_gender_kb(voice: dict) -> InlineKeyboardMarkup:
+    labels = voice["gender_labels"]
+    return InlineKeyboardMarkup(
+        inline_keyboard=[[
+            InlineKeyboardButton(text=labels["m"], callback_data="gender:m"),
+            InlineKeyboardButton(text=labels["f"], callback_data="gender:f"),
+        ]]
+    )
+
 
 JOB_TYPE_KB = InlineKeyboardMarkup(
     inline_keyboard=[[
@@ -103,33 +106,40 @@ async def cmd_start(message: Message, state: FSMContext) -> None:
     async with async_session() as session:
         user = await get_or_create_user(session, message.from_user.id, message.from_user.language_code or "ru")
 
+    voice = get_voice(user.voice)
+
     if user.status != "onboarding":
-        await message.answer(f"Профиль есть. <b>{random.choice(WOLF_QUOTES)}</b> Думай.")
+        await message.answer(voice["welcome_back"].format(quote=f"<b>{random.choice(voice['quotes'])}</b>"))
         return
 
     await state.set_state(Onboarding.gender)
+    await state.update_data(voice=user.voice)
     await message.answer(
-        f"Погнали считать. {CONFIRM}\n\n"
-        f"<b>{random.choice(WOLF_QUOTES)}</b>\n\n"
-        "Ты вообще кто?",
-        reply_markup=GENDER_KB,
+        voice["start_intro"].format(quote=f"<b>{random.choice(voice['quotes'])}</b>"),
+        reply_markup=build_gender_kb(voice),
     )
 
 
 @router.callback_query(StateFilter(Onboarding.gender), F.data.startswith("gender:"))
 async def on_gender(callback: CallbackQuery, state: FSMContext) -> None:
+    data = await state.get_data()
+    voice = get_voice(data.get("voice", DEFAULT_VOICE))
+
     gender = callback.data.split(":")[1]
     await state.update_data(gender=gender)
     await state.set_state(Onboarding.age)
-    await callback.message.edit_text(f"{GENDER_LABELS[gender]}. {CONFIRM}")
+    await callback.message.edit_text(f"{voice['gender_labels'][gender]}. {voice['confirm']}")
     await callback.message.answer("Возраст?")
     await callback.answer()
 
 
 @router.message(StateFilter(Onboarding.age))
 async def on_age(message: Message, state: FSMContext) -> None:
+    data = await state.get_data()
+    voice = get_voice(data.get("voice", DEFAULT_VOICE))
+
     if not message.text.isdigit() or not (10 <= int(message.text) <= 100):
-        await message.answer("По факту, Андрюх, это не число. Думай. Ещё раз — цифрами.")
+        await message.answer(voice["age_error"])
         return
     await state.update_data(age=int(message.text))
     await state.set_state(Onboarding.height)
@@ -138,11 +148,14 @@ async def on_age(message: Message, state: FSMContext) -> None:
 
 @router.message(StateFilter(Onboarding.height))
 async def on_height(message: Message, state: FSMContext) -> None:
+    data = await state.get_data()
+    voice = get_voice(data.get("voice", DEFAULT_VOICE))
+
     try:
         height = float(message.text.replace(",", "."))
         assert 100 <= height <= 250
     except (ValueError, AssertionError):
-        await message.answer("Рост в см, цифрами. Думай.")
+        await message.answer(voice["height_error"])
         return
     await state.update_data(height_cm=height)
     await state.set_state(Onboarding.weight)
@@ -151,27 +164,29 @@ async def on_height(message: Message, state: FSMContext) -> None:
 
 @router.message(StateFilter(Onboarding.weight))
 async def on_weight(message: Message, state: FSMContext) -> None:
+    data = await state.get_data()
+    voice = get_voice(data.get("voice", DEFAULT_VOICE))
+
     try:
         weight = float(message.text.replace(",", "."))
         assert 30 <= weight <= 300
     except (ValueError, AssertionError):
-        await message.answer("Вес в кг, цифрами. Не для фантазий.")
+        await message.answer(voice["weight_error"])
         return
     await state.update_data(weight_kg=weight)
     await state.set_state(Onboarding.job_type)
-    await message.answer(
-        "Теперь активность. Честно, без сгущёнки в голове:\n\n"
-        "Работа/учёба — сидячая или на ногах?",
-        reply_markup=JOB_TYPE_KB,
-    )
+    await message.answer(voice["activity_intro"], reply_markup=JOB_TYPE_KB)
 
 
 @router.callback_query(StateFilter(Onboarding.job_type), F.data.startswith("job:"))
 async def on_job_type(callback: CallbackQuery, state: FSMContext) -> None:
+    data = await state.get_data()
+    voice = get_voice(data.get("voice", DEFAULT_VOICE))
+
     job_type = callback.data.split(":")[1]
     await state.update_data(job_type=job_type)
     await state.set_state(Onboarding.strength_freq)
-    await callback.message.edit_text(CONFIRM)
+    await callback.message.edit_text(voice["confirm"])
     await callback.message.answer(
         "Силовые — сколько раз в неделю? Ноль — тоже ответ, но ты знаешь, что это значит.",
         reply_markup=STRENGTH_KB,
@@ -181,10 +196,13 @@ async def on_job_type(callback: CallbackQuery, state: FSMContext) -> None:
 
 @router.callback_query(StateFilter(Onboarding.strength_freq), F.data.startswith("strength:"))
 async def on_strength_freq(callback: CallbackQuery, state: FSMContext) -> None:
+    data = await state.get_data()
+    voice = get_voice(data.get("voice", DEFAULT_VOICE))
+
     strength_freq = callback.data.split(":")[1]
     await state.update_data(strength_freq=strength_freq)
     await state.set_state(Onboarding.cardio_freq)
-    await callback.message.edit_text(CONFIRM)
+    await callback.message.edit_text(voice["confirm"])
     await callback.message.answer(
         "Кардио — сколько раз в неделю? Без самообмана.",
         reply_markup=CARDIO_KB,
@@ -194,10 +212,13 @@ async def on_strength_freq(callback: CallbackQuery, state: FSMContext) -> None:
 
 @router.callback_query(StateFilter(Onboarding.cardio_freq), F.data.startswith("cardio:"))
 async def on_cardio_freq(callback: CallbackQuery, state: FSMContext) -> None:
+    data = await state.get_data()
+    voice = get_voice(data.get("voice", DEFAULT_VOICE))
+
     cardio_freq = callback.data.split(":")[1]
     await state.update_data(cardio_freq=cardio_freq)
     await state.set_state(Onboarding.steps)
-    await callback.message.edit_text(CONFIRM)
+    await callback.message.edit_text(voice["confirm"])
     await callback.message.answer(
         "Шаги в день — в среднем? Честно, не для красоты цифры.",
         reply_markup=STEPS_KB,
@@ -207,20 +228,26 @@ async def on_cardio_freq(callback: CallbackQuery, state: FSMContext) -> None:
 
 @router.callback_query(StateFilter(Onboarding.steps), F.data.startswith("steps:"))
 async def on_steps(callback: CallbackQuery, state: FSMContext) -> None:
+    data = await state.get_data()
+    voice = get_voice(data.get("voice", DEFAULT_VOICE))
+
     steps_bucket = callback.data.split(":")[1]
     await state.update_data(steps_bucket=steps_bucket)
     await state.set_state(Onboarding.goal)
-    await callback.message.edit_text(CONFIRM)
+    await callback.message.edit_text(voice["confirm"])
     await callback.message.answer("Цель. Без розовых очков.", reply_markup=GOAL_KB)
     await callback.answer()
 
 
 @router.callback_query(StateFilter(Onboarding.goal), F.data.startswith("goal:"))
 async def on_goal(callback: CallbackQuery, state: FSMContext) -> None:
+    data = await state.get_data()
+    voice = get_voice(data.get("voice", DEFAULT_VOICE))
+
     goal = callback.data.split(":")[1]
     await state.update_data(goal=goal)
-    await callback.message.edit_text(CONFIRM)
-    await callback.message.answer(GOAL_LINES[goal])
+    await callback.message.edit_text(voice["confirm"])
+    await callback.message.answer(voice["goal_lines"][goal])
 
     if goal == "maintain":
         await finish_onboarding(callback.message, state)
@@ -232,11 +259,14 @@ async def on_goal(callback: CallbackQuery, state: FSMContext) -> None:
 
 @router.message(StateFilter(Onboarding.target_weight))
 async def on_target_weight(message: Message, state: FSMContext) -> None:
+    data = await state.get_data()
+    voice = get_voice(data.get("voice", DEFAULT_VOICE))
+
     try:
         target = float(message.text.replace(",", "."))
         assert 30 <= target <= 300
     except (ValueError, AssertionError):
-        await message.answer("Целевой вес в кг, цифрами. Мечты не считаются.")
+        await message.answer(voice["target_weight_error"])
         return
     await state.update_data(target_weight_kg=target)
     await state.set_state(Onboarding.pace)
@@ -245,15 +275,19 @@ async def on_target_weight(message: Message, state: FSMContext) -> None:
 
 @router.callback_query(StateFilter(Onboarding.pace), F.data.startswith("pace:"))
 async def on_pace(callback: CallbackQuery, state: FSMContext) -> None:
+    data = await state.get_data()
+    voice = get_voice(data.get("voice", DEFAULT_VOICE))
+
     pace = callback.data.split(":")[1]
     await state.update_data(pace=pace)
-    await callback.message.edit_text(CONFIRM)
+    await callback.message.edit_text(voice["confirm"])
     await finish_onboarding(callback.message, state)
     await callback.answer()
 
 
 async def finish_onboarding(message: Message, state: FSMContext) -> None:
     data = await state.get_data()
+    voice = get_voice(data.get("voice", DEFAULT_VOICE))
 
     bmr = calculate_bmr(data["gender"], data["weight_kg"], data["height_cm"], data["age"])
     activity_coefficient = calculate_activity_coefficient(
@@ -288,13 +322,13 @@ async def finish_onboarding(message: Message, state: FSMContext) -> None:
 
     await state.clear()
     await message.answer(
-        "Норма готова. Это не предложение — это план.\n\n"
+        f"{voice['final_summary_lead']}\n\n"
         f"🔥 Калории: {target_calories} ккал\n"
         f"🥩 Белки: {macros['protein_g']} г\n"
         f"🧈 Жиры: {macros['fat_g']} г\n"
         f"🍞 Углеводы: {macros['carbs_g']} г\n"
         f"💧 Вода: {water_ml} мл\n\n"
-        f"<b>{random.choice(WOLF_QUOTES)}</b>\n\n"
-        "Дневник и трекинг — дальше. Думай.",
+        f"<b>{random.choice(voice['quotes'])}</b>\n\n"
+        f"{voice['final_summary_tail']}",
         reply_markup=SHARE_MEAL_KB,
     )
