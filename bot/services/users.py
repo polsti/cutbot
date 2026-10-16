@@ -19,3 +19,9 @@ async def mark_active(session: AsyncSession, user_id: int) -> None:
     user = await session.get(User, user_id)
     user.status = "active"
     await session.commit()
+
+
+async def set_voice(session: AsyncSession, user_id: int, voice: str) -> None:
+    user = await session.get(User, user_id)
+    user.voice = voice
+    await session.commit()
