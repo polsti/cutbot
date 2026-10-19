@@ -30,6 +30,7 @@ def test_language_matches_russian(lang):
     for key in ru:
         assert _placeholders(other[key]) == _placeholders(ru[key]), key
     assert len(other["day_names"]) == 7
+    assert len(other["weekday_names"]) == 7
 
 
 @pytest.mark.parametrize("name", list(VOICES))

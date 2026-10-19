@@ -39,6 +39,8 @@ VOICE = {
     "week_lead": "Останні 7 днів:",
     "week_no_data": "— (нічого не записано)",
     # TODO(Polina): replace with your own quotes
+    # How the /assist AI should talk (instruction for the model, in English)
+    "assistant_style": "Friendly Ukrainian humour, cossack jokes ('козаче', 'шо ти, козаче'), playful but caring.",
     "help_quote_pool": [
         "Дисципліна — це свобода.",
         "Без зусиль нема результату.",

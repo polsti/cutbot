@@ -31,3 +31,15 @@ async def set_language(session: AsyncSession, user_id: int, language: str) -> No
     user = await session.get(User, user_id)
     user.language = language
     await session.commit()
+
+
+async def update_user(session: AsyncSession, user_id: int, **fields) -> None:
+    user = await session.get(User, user_id)
+    for key, value in fields.items():
+        setattr(user, key, value)
+    await session.commit()
+
+
+async def get_reminder_users(session: AsyncSession) -> list[User]:
+    result = await session.execute(select(User).where(User.weigh_reminder != "none"))
+    return list(result.scalars())
