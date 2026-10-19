@@ -22,9 +22,11 @@ PROMPT_TEMPLATE = """Ты — эксперт по оценке калорийн�
 {description_block}
 
 Ответь СТРОГО в формате JSON с полями: dish_name (строка), calories (число),
-protein_g (число), fat_g (число), carbs_g (число), note (строка, по-русски,
+protein_g (число), fat_g (число), carbs_g (число), note (строка,
 коротко — что именно не хватало для точного расчёта, например способ готовки,
-точный вес, вид мяса)."""
+точный вес, вид мяса).
+
+dish_name и note пиши на языке: {language}."""
 
 WITH_DESCRIPTION = 'Пользователь написал про блюдо: "{description}". Используй эту информацию для точности.'
 WITHOUT_DESCRIPTION = (
@@ -33,9 +35,9 @@ WITHOUT_DESCRIPTION = (
 )
 
 
-def analyze_meal_photo(image_bytes: bytes, mime_type: str, description: str | None) -> dict:
+def analyze_meal_photo(image_bytes: bytes, mime_type: str, description: str | None, language: str = "русский") -> dict:
     description_block = WITH_DESCRIPTION.format(description=description) if description else WITHOUT_DESCRIPTION
-    prompt = PROMPT_TEMPLATE.format(description_block=description_block)
+    prompt = PROMPT_TEMPLATE.format(description_block=description_block, language=language)
 
     client = genai.Client(
         api_key=settings.gemini_api_key,

@@ -25,3 +25,9 @@ async def set_voice(session: AsyncSession, user_id: int, voice: str) -> None:
     user = await session.get(User, user_id)
     user.voice = voice
     await session.commit()
+
+
+async def set_language(session: AsyncSession, user_id: int, language: str) -> None:
+    user = await session.get(User, user_id)
+    user.language = language
+    await session.commit()
