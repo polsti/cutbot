@@ -12,6 +12,7 @@ TEXTS = {
         "/today — today's summary\n"
         "/stats — last 7 days\n"
         "/weight — log your weight\n"
+        "/progress — weight chart\n"
         "/goal — change your goal\n"
         "/reminders — weigh-in reminders\n"
         "/settings — language and style\n"
@@ -73,6 +74,10 @@ TEXTS = {
     "weigh_good": "Great progress 💪",
     "weigh_left": "{left} kg left to your {target} kg goal 🔥",
     "weigh_reached": "🎉 Goal of {target} kg reached! Switch to maintain or gain — /goal",
+    "chart_weight": "Weight",
+    "chart_target": "Goal",
+    "progress_summary": "📈 Start: {start} kg ({start_date})\nNow: {current} kg\nChange: {change:+.1f} kg in {days} days",
+    "progress_first": "📈 Only one entry so far: {current} kg. Log your weight with /weight and the chart will show up here.",
     "goal_intro": "Pick your new goal:",
     "goal_updated": "Goal updated ✅ New daily norm (at {weight} kg):",
     # weigh-in reminders
