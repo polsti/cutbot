@@ -14,6 +14,7 @@ TEXTS = {
         "/weight — log your weight\n"
         "/progress — weight chart\n"
         "/goal — change your goal\n"
+        "/assist — AI nutrition assistant\n"
         "/reminders — weigh-in reminders\n"
         "/settings — language and style\n"
         "/help — this help\n\n"
@@ -94,6 +95,11 @@ TEXTS = {
     "rem_off": "OK, no reminders. You can turn them on any time — /reminders",
     "reminder_msg": "⚖️ Today is weigh day! Best in the morning, before breakfast.",
     "reminder_btn": "⚖️ Log weight",
+    # assistant
+    "assist_intro": "🤖 AI assistant here. I can see your profile, daily norm, today's and this week's food, and your weight history.\n\nAsk anything: how to get more protein, why the weight isn't moving, what to eat for dinner.\n\n/stop — end the chat.",
+    "assist_bye": "Chat ended. Come back any time — /assist",
+    "assist_error": "Couldn't answer — the AI service is overloaded. Try again in a minute.",
+    "assist_text_only": "In assistant mode, send text. To log a meal from a photo, /stop first.",
     # meals
     "skip_description_btn": "No description",
     "add_to_diary_btn": "✅ Add to diary",
