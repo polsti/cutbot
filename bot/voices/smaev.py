@@ -39,6 +39,8 @@ VOICE = {
     "today_lead": "Сегодня:",
     "week_lead": "Последние 7 дней:",
     "week_no_data": "— (ничего не записано)",
+    # How the /assist AI should talk (instruction for the model, in English)
+    "assistant_style": "Blunt, ironic, short sentences, tough-love humour in the style of Russian 'Smaev' internet memes (e.g. 'Думай.', 'По факту'). Never insulting.",
     "help_quote_pool": [
         "Discipline equals freedom.",
         "Stay hard.",

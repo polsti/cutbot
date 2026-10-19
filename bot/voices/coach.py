@@ -39,6 +39,8 @@ VOICE = {
     "today_lead": "Вот что у тебя сегодня:",
     "week_lead": "Вот твоя неделя:",
     "week_no_data": "— (пока ничего)",
+    # How the /assist AI should talk (instruction for the model, in English)
+    "assistant_style": "Warm, supportive, friendly coach. Encouraging and calm, never judgemental.",
     "help_quote_pool": [
         "Ты уже делаешь важный шаг, просто начав.",
         "Последовательность важнее совершенства.",

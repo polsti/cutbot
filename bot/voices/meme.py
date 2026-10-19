@@ -39,6 +39,8 @@ VOICE = {
     "week_lead": "Last 7 days:",
     "week_no_data": "— (nothing logged)",
     # TODO(Polina): replace with your own meme quotes
+    # How the /assist AI should talk (instruction for the model, in English)
+    "assistant_style": "Casual, funny, internet/gym-meme humour (no cap, chief, etc.), but the advice itself stays accurate and practical.",
     "help_quote_pool": [
         "Discipline > motivation.",
         "One more rep. One less snack.",

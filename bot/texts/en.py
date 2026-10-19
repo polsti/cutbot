@@ -11,6 +11,11 @@ TEXTS = {
         "/add — log a meal from a photo\n"
         "/today — today's summary\n"
         "/stats — last 7 days\n"
+        "/weight — log your weight\n"
+        "/progress — weight chart\n"
+        "/goal — change your goal\n"
+        "/assist — AI nutrition assistant\n"
+        "/reminders — weigh-in reminders\n"
         "/settings — language and style\n"
         "/help — this help\n\n"
         "More (/fridge etc.) is coming."
@@ -61,6 +66,41 @@ TEXTS = {
         "🍞 Carbs: {carbs_g} g"
     ),
     "water_line": "💧 Water: {water_ml} ml",
+    # weight
+    "weigh_q": "What do you weigh today? In kg, e.g. 68.4",
+    "weigh_saved": "⚖️ Saved: {weight} kg",
+    "weigh_first": "That's your first entry — from now on I'll show your progress.",
+    "weigh_since_last": "Since last time ({date}): {diff:+.1f} kg",
+    "weigh_since_start": "Since the start: {diff:+.1f} kg",
+    "weigh_good": "Great progress 💪",
+    "weigh_left": "{left} kg left to your {target} kg goal 🔥",
+    "weigh_reached": "🎉 Goal of {target} kg reached! Switch to maintain or gain — /goal",
+    "chart_weight": "Weight",
+    "chart_unit": "kg",
+    "chart_target": "Goal",
+    "progress_summary": "📈 Start: {start} kg ({start_date})\nNow: {current} kg\nChange: {change:+.1f} kg in {days} days",
+    "progress_first": "📈 Only one entry so far: {current} kg. Log your weight with /weight and the chart will show up here.",
+    "goal_intro": "Pick your new goal:",
+    "goal_updated": "Goal updated ✅ New daily norm (at {weight} kg):",
+    # weigh-in reminders
+    "rem_q": "Want to track your weight? I'll remind you in the morning when it's weigh day ⚖️",
+    "rem_yes_no": {"yes": "✅ Yes", "no": "No, thanks"},
+    "rem_freq_q": "How often do you want to weigh in?",
+    "rem_freq_buttons": {"daily": "Every day", "every3": "Every 3 days", "weekly": "Once a week"},
+    "rem_weekday_q": "Which day of the week?",
+    "weekday_names": ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"],
+    "rem_time_q": "What time is it for you right now? E.g. 18:40 — that's how I'll know your timezone and message you in the morning.",
+    "rem_time_error": "Send the time as HH:MM, e.g. 18:40",
+    "rem_when": {"daily": "every day", "every3": "every 3 days", "weekly": "every week on {day}"},
+    "rem_on": "Done ✅ I'll remind you at 08:00 your time, {when}. You can log your weight any other day too — /weight",
+    "rem_off": "OK, no reminders. You can turn them on any time — /reminders",
+    "reminder_msg": "⚖️ Today is weigh day! Best in the morning, before breakfast.",
+    "reminder_btn": "⚖️ Log weight",
+    # assistant
+    "assist_intro": "🤖 AI assistant here. I can see your profile, daily norm, today's and this week's food, and your weight history.\n\nAsk anything: how to get more protein, why the weight isn't moving, what to eat for dinner.\n\n/stop — end the chat.",
+    "assist_bye": "Chat ended. Come back any time — /assist",
+    "assist_error": "Couldn't answer — the AI service is overloaded. Try again in a minute.",
+    "assist_text_only": "In assistant mode, send text. To log a meal from a photo, /stop first.",
     # meals
     "skip_description_btn": "No description",
     "add_to_diary_btn": "✅ Add to diary",
