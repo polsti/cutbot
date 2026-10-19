@@ -13,6 +13,8 @@ from bot.handlers.settings import router as settings_router
 from bot.handlers.start import router as start_router
 from bot.handlers.weight import router as weight_router
 from bot.health import start_health_server
+from bot.handlers.reminders import router as reminders_router
+from bot.scheduler import start_scheduler
 
 
 async def main() -> None:
@@ -24,13 +26,16 @@ async def main() -> None:
     dp.include_router(meals_router)
     dp.include_router(settings_router)
     dp.include_router(weight_router)
+    dp.include_router(reminders_router)
     dp.include_router(start_router)
     dp.include_router(fallback_router)  # must stay last
 
     health_runner = await start_health_server(settings.port)
+    scheduler = start_scheduler(bot)
     try:
         await dp.start_polling(bot)
     finally:
+        scheduler.shutdown(wait=False)
         await health_runner.cleanup()
 
 

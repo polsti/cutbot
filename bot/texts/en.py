@@ -13,6 +13,7 @@ TEXTS = {
         "/stats — last 7 days\n"
         "/weight — log your weight\n"
         "/goal — change your goal\n"
+        "/reminders — weigh-in reminders\n"
         "/settings — language and style\n"
         "/help — this help\n\n"
         "More (/fridge etc.) is coming."
@@ -74,6 +75,20 @@ TEXTS = {
     "weigh_reached": "🎉 Goal of {target} kg reached! Switch to maintain or gain — /goal",
     "goal_intro": "Pick your new goal:",
     "goal_updated": "Goal updated ✅ New daily norm (at {weight} kg):",
+    # weigh-in reminders
+    "rem_q": "Want to track your weight? I'll remind you in the morning when it's weigh day ⚖️",
+    "rem_yes_no": {"yes": "✅ Yes", "no": "No, thanks"},
+    "rem_freq_q": "How often do you want to weigh in?",
+    "rem_freq_buttons": {"daily": "Every day", "every3": "Every 3 days", "weekly": "Once a week"},
+    "rem_weekday_q": "Which day of the week?",
+    "weekday_names": ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"],
+    "rem_time_q": "What time is it for you right now? E.g. 18:40 — that's how I'll know your timezone and message you in the morning.",
+    "rem_time_error": "Send the time as HH:MM, e.g. 18:40",
+    "rem_when": {"daily": "every day", "every3": "every 3 days", "weekly": "every week on {day}"},
+    "rem_on": "Done ✅ I'll remind you at 08:00 your time, {when}. You can log your weight any other day too — /weight",
+    "rem_off": "OK, no reminders. You can turn them on any time — /reminders",
+    "reminder_msg": "⚖️ Today is weigh day! Best in the morning, before breakfast.",
+    "reminder_btn": "⚖️ Log weight",
     # meals
     "skip_description_btn": "No description",
     "add_to_diary_btn": "✅ Add to diary",
