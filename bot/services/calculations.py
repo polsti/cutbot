@@ -91,3 +91,46 @@ def calculate_macros(gender: str, goal: str, weight_kg: float, target_calories: 
 
 def calculate_water_ml(weight_kg: float) -> int:
     return round(weight_kg * WATER_ML_PER_KG)
+
+
+def calculate_norms(
+    gender: str, age: int, height_cm: float, weight_kg: float,
+    activity_coefficient: float, goal: str, pace: str | None,
+) -> dict:
+    """Full daily norm from scratch — used by /goal to recalculate with the latest weight."""
+    tdee = calculate_tdee(calculate_bmr(gender, weight_kg, height_cm, age), activity_coefficient)
+    target_calories = calculate_target_calories(tdee, gender, goal, pace)
+    return {
+        "target_calories": target_calories,
+        **calculate_macros(gender, goal, weight_kg, target_calories),
+        "water_ml": calculate_water_ml(weight_kg),
+    }
+
+
+def weight_progress(weights: list[float], goal: str, target_weight_kg: float | None) -> dict:
+    """Progress summary for a list of weigh-ins (oldest first, at least one).
+
+    since_last / since_start: signed kg change (None when there's no earlier entry).
+    left: kg still to go (None for maintain / no target). reached: goal hit.
+    toward_goal: last change moved in the right direction.
+    """
+    current = weights[-1]
+    since_last = round(current - weights[-2], 1) if len(weights) > 1 else None
+    since_start = round(current - weights[0], 1) if len(weights) > 1 else None
+
+    left = reached = toward_goal = None
+    if goal in ("lose", "gain") and target_weight_kg is not None:
+        direction = -1 if goal == "lose" else 1
+        left = round(max((target_weight_kg - current) * direction, 0), 1)
+        reached = left == 0
+        if since_last is not None:
+            toward_goal = since_last * direction > 0
+
+    return {
+        "current": current,
+        "since_last": since_last,
+        "since_start": since_start,
+        "left": left,
+        "reached": reached,
+        "toward_goal": toward_goal,
+    }

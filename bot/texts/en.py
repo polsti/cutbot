@@ -11,6 +11,8 @@ TEXTS = {
         "/add — log a meal from a photo\n"
         "/today — today's summary\n"
         "/stats — last 7 days\n"
+        "/weight — log your weight\n"
+        "/goal — change your goal\n"
         "/settings — language and style\n"
         "/help — this help\n\n"
         "More (/fridge etc.) is coming."
@@ -61,6 +63,17 @@ TEXTS = {
         "🍞 Carbs: {carbs_g} g"
     ),
     "water_line": "💧 Water: {water_ml} ml",
+    # weight
+    "weigh_q": "What do you weigh today? In kg, e.g. 68.4",
+    "weigh_saved": "⚖️ Saved: {weight} kg",
+    "weigh_first": "That's your first entry — from now on I'll show your progress.",
+    "weigh_since_last": "Since last time ({date}): {diff:+.1f} kg",
+    "weigh_since_start": "Since the start: {diff:+.1f} kg",
+    "weigh_good": "Great progress 💪",
+    "weigh_left": "{left} kg left to your {target} kg goal 🔥",
+    "weigh_reached": "🎉 Goal of {target} kg reached! Switch to maintain or gain — /goal",
+    "goal_intro": "Pick your new goal:",
+    "goal_updated": "Goal updated ✅ New daily norm (at {weight} kg):",
     # meals
     "skip_description_btn": "No description",
     "add_to_diary_btn": "✅ Add to diary",
