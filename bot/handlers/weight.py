@@ -143,7 +143,7 @@ async def cmd_progress(message: Message) -> None:
         lines.append(t["weigh_left"].format(target=fmt_kg(target), left=fmt_kg(p["left"])))
 
     png = await asyncio.to_thread(
-        render_weight_chart, [e.recorded_at for e in entries], weights, target, t["chart_weight"], t["chart_target"],
+        render_weight_chart, [e.recorded_at for e in entries], weights, target, t["chart_weight"], t["chart_target"], t["chart_unit"],
     )
     await message.answer_photo(BufferedInputFile(png, filename="progress.png"), caption="\n\n".join(lines))
 

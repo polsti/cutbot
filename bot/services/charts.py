@@ -16,7 +16,7 @@ TEXT = "#374151"
 
 
 def render_weight_chart(
-    dates: list[datetime], weights: list[float], target_kg: float | None, weight_label: str, target_label: str,
+    dates: list[datetime], weights: list[float], target_kg: float | None, weight_label: str, target_label: str, unit_label: str = "kg",
 ) -> bytes:
     fig, ax = plt.subplots(figsize=(8, 4.5), dpi=150)
 
@@ -35,7 +35,7 @@ def render_weight_chart(
 
     ax.xaxis.set_major_formatter(mdates.DateFormatter("%d.%m"))
     ax.xaxis.set_major_locator(mdates.AutoDateLocator(minticks=3, maxticks=8))
-    ax.set_ylabel("kg", color=TEXT)
+    ax.set_ylabel(unit_label, color=TEXT)
     ax.grid(axis="y", color=GRID)
     for side in ("top", "right"):
         ax.spines[side].set_visible(False)

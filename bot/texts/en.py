@@ -76,6 +76,7 @@ TEXTS = {
     "weigh_left": "{left} kg left to your {target} kg goal 🔥",
     "weigh_reached": "🎉 Goal of {target} kg reached! Switch to maintain or gain — /goal",
     "chart_weight": "Weight",
+    "chart_unit": "kg",
     "chart_target": "Goal",
     "progress_summary": "📈 Start: {start} kg ({start_date})\nNow: {current} kg\nChange: {change:+.1f} kg in {days} days",
     "progress_first": "📈 Only one entry so far: {current} kg. Log your weight with /weight and the chart will show up here.",
