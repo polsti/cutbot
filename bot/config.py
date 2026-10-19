@@ -7,6 +7,7 @@ class Settings(BaseSettings):
     bot_token: str
     database_url: str
     gemini_api_key: str
+    port: int = 8080  # Render sets PORT automatically
 
 
 settings = Settings()

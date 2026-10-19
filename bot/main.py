@@ -10,6 +10,7 @@ from bot.handlers.meals import router as meals_router
 from bot.handlers.onboarding import router as onboarding_router
 from bot.handlers.settings import router as settings_router
 from bot.handlers.start import router as start_router
+from bot.health import start_health_server
 
 
 async def main() -> None:
@@ -22,7 +23,11 @@ async def main() -> None:
     dp.include_router(settings_router)
     dp.include_router(start_router)
 
-    await dp.start_polling(bot)
+    health_runner = await start_health_server(settings.port)
+    try:
+        await dp.start_polling(bot)
+    finally:
+        await health_runner.cleanup()
 
 
 if __name__ == "__main__":
