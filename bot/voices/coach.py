@@ -1,58 +1,7 @@
-"""Switchable bot personas. Each voice is a dict of the same keys — the
-"personality" slots used across onboarding, meal logging, and summaries.
-Short functional prompts (e.g. "Рост, в см?") stay neutral and shared
-across voices on purpose; only the flavor/personality text differs.
+"""Добрый тренер — тепло, по-дружески (Russian)."""
 
-To add a new voice: copy one of these dicts, fill in every key, register
-it in VOICES and VOICE_LABELS below. Nothing else needs to change.
-"""
-
-SMAEV = {
-    "label": "🐺 Смаев (жёстко, с юмором)",
-    "gender_labels": {"m": "Рыба-меч", "f": "Малышка"},
-    "confirm": "По факту, Андрюх ✅",
-    "welcome_back": "Профиль есть. {quote} Думай.",
-    "start_intro": "Sigma не ищет мотивацию — sigma считает цифры.\n\n{quote}\n\nПара вопросов. Отвечай честно — трекер не прощает самообмана.\n\nПол?",
-    "age_error": "По факту, Андрюх, это не число. Думай. Ещё раз — цифрами.",
-    "height_error": "Рост в см, цифрами. Думай.",
-    "weight_error": "Вес в кг, цифрами. Не для фантазий.",
-    "activity_intro": "Теперь активность. Честно, без сгущёнки в голове:\n\nРабота/учёба — сидячая или на ногах?",
-    "goal_lines": {
-        "lose": "Вот и думайте.",
-        "gain": "Че, пацаны, по сгущёнке?",
-        "maintain": "Сколько волка ни корми — он всё равно на сгущёнку смотрит.",
-    },
-    "target_weight_error": "Целевой вес в кг, цифрами. Мечты не считаются.",
-    "final_summary_lead": "Норма готова. Это не предложение — это план.",
-    "final_summary_tail": "Дневник и трекинг — дальше. Думай.",
-    "quotes": [
-        "Если тебе тяжело идти, значит, ты забыл снять гири. Думай.",
-        "Неважно, сколько у тебя денег. Важно, сколько у тебя денег на самом деле.",
-        "Работа — не волк. Работа — это ворк. А волк — это ходить.",
-        "Я не ленивый. Я просто нахожусь в режиме энергосбережения ради будущих миллионов.",
-        "Пока они спали, я спал. Мы разные.",
-    ],
-    "fridge_empty_line": "У тебя нет даже Бобров и Грибов.",  # reserved for the fridge/vision feature, not built yet
-    "share_meal_prompt": "Пришли фото еды 📸",
-    "not_a_photo": "Это не фото. Пришли фото еды — по факту, Андрюх.",
-    "description_prompt": "Хочешь написать описание? (например: без масла, 100 г риса, свинина)\n\nЭто повышает точность расчёта.",
-    "thinking": "Думаю над фото... 🤔",
-    "vision_error": "Не вышло разобрать фото. Пришли ещё раз, по-другому ракурсом.",
-    "meal_result_lead": "Это оценка, не аптекарская точность. Добавляем?",
-    "meal_cancel": "Отменено. Не страшно — пришли /add и жми заново, когда будешь готов.",
-    "today_no_profile": "Сначала профиль. /start — и погнали.",
-    "today_empty": "Сегодня пока пусто. /add — и добавляй.",
-    "today_lead": "Сегодня:",
-    "week_lead": "Последние 7 дней:",
-    "week_no_data": "— (ничего не записано)",
-    "help_quote_pool": [
-        "Discipline equals freedom.",
-        "Stay hard.",
-        "No excuses. Only results.",
-    ],
-}
-
-COACH = {
+VOICE = {
+    "lang": "ru",
     "label": "🤝 Добрый тренер (тепло, по-дружески)",
     "gender_labels": {"m": "Мужской", "f": "Женский"},
     "confirm": "Отлично, записал! ✅",
@@ -96,10 +45,3 @@ COACH = {
         "Забота о себе — это нормально.",
     ],
 }
-
-VOICES = {"smaev": SMAEV, "coach": COACH}
-DEFAULT_VOICE = "smaev"
-
-
-def get_voice(name: str) -> dict:
-    return VOICES.get(name, VOICES[DEFAULT_VOICE])
