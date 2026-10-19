@@ -76,6 +76,7 @@ TEXTS = {
     "weigh_left": "До мети {target} кг залишилось {left} кг 🔥",
     "weigh_reached": "🎉 Мету {target} кг досягнуто! Можна змінити мету на підтримку або набір — /goal",
     "chart_weight": "Вага",
+    "chart_unit": "кг",
     "chart_target": "Мета",
     "progress_summary": "📈 Старт: {start} кг ({start_date})\nЗараз: {current} кг\nЗміна: {change:+.1f} кг за {days} дн.",
     "progress_first": "📈 Поки один запис: {current} кг. Записуй вагу через /weight — і тут зʼявиться графік.",
