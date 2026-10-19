@@ -62,7 +62,7 @@ def row_kb(prefix: str, labels: dict) -> InlineKeyboardMarkup:
     )
 
 
-def _column_kb(prefix: str, labels: dict) -> InlineKeyboardMarkup:
+def column_kb(prefix: str, labels: dict) -> InlineKeyboardMarkup:
     """One button per row."""
     return InlineKeyboardMarkup(
         inline_keyboard=[[InlineKeyboardButton(text=label, callback_data=f"{prefix}:{key}")] for key, label in labels.items()]
@@ -169,7 +169,7 @@ async def on_job_type(callback: CallbackQuery, state: FSMContext) -> None:
     await state.update_data(job_type=job_type)
     await state.set_state(Onboarding.strength_freq)
     await callback.message.edit_text(voice["confirm"])
-    await callback.message.answer(t["strength_q"], reply_markup=_column_kb("strength", t["frequency_labels"]))
+    await callback.message.answer(t["strength_q"], reply_markup=column_kb("strength", t["frequency_labels"]))
     await callback.answer()
 
 
@@ -181,7 +181,7 @@ async def on_strength_freq(callback: CallbackQuery, state: FSMContext) -> None:
     await state.update_data(strength_freq=strength_freq)
     await state.set_state(Onboarding.cardio_freq)
     await callback.message.edit_text(voice["confirm"])
-    await callback.message.answer(t["cardio_q"], reply_markup=_column_kb("cardio", t["frequency_labels"]))
+    await callback.message.answer(t["cardio_q"], reply_markup=column_kb("cardio", t["frequency_labels"]))
     await callback.answer()
 
 
@@ -193,7 +193,7 @@ async def on_cardio_freq(callback: CallbackQuery, state: FSMContext) -> None:
     await state.update_data(cardio_freq=cardio_freq)
     await state.set_state(Onboarding.steps)
     await callback.message.edit_text(voice["confirm"])
-    await callback.message.answer(t["steps_q"], reply_markup=_column_kb("steps", t["steps_labels"]))
+    await callback.message.answer(t["steps_q"], reply_markup=column_kb("steps", t["steps_labels"]))
     await callback.answer()
 
 
@@ -298,3 +298,7 @@ async def finish_onboarding(message: Message, state: FSMContext) -> None:
         f"{voice['final_summary_tail']}",
         reply_markup=share_meal_kb(t),
     )
+
+    # Imported here, not at the top: reminders.py imports keyboards from this module.
+    from bot.handlers.reminders import start_reminder_setup
+    await start_reminder_setup(message, state, data.get("voice", DEFAULT_VOICE))
