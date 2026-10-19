@@ -17,12 +17,14 @@ from bot.services.calculations import (
 )
 from bot.services.profiles import save_profile
 from bot.services.users import get_or_create_user, mark_active
+from bot.texts import LANGUAGE_LABELS, LANGUAGE_PROMPT, texts_for
 from bot.voices import DEFAULT_VOICE, get_voice
 
 router = Router()
 
 
 class Onboarding(StatesGroup):
+    language = State()
     gender = State()
     age = State()
     height = State()
@@ -36,6 +38,12 @@ class Onboarding(StatesGroup):
     pace = State()
 
 
+def language_kb() -> InlineKeyboardMarkup:
+    return InlineKeyboardMarkup(
+        inline_keyboard=[[InlineKeyboardButton(text=label, callback_data=f"lang:{lang}")] for lang, label in LANGUAGE_LABELS.items()]
+    )
+
+
 def build_gender_kb(voice: dict) -> InlineKeyboardMarkup:
     labels = voice["gender_labels"]
     return InlineKeyboardMarkup(
@@ -46,59 +54,30 @@ def build_gender_kb(voice: dict) -> InlineKeyboardMarkup:
     )
 
 
-JOB_TYPE_KB = InlineKeyboardMarkup(
-    inline_keyboard=[[
-        InlineKeyboardButton(text="Сидячая работа/учёба", callback_data="job:office"),
-        InlineKeyboardButton(text="Физическая работа / на ногах", callback_data="job:physical"),
-    ]]
-)
-
-FREQUENCY_LABELS = [
-    ("0", "Не занимаюсь"),
-    ("1-2", "1–2 раза в неделю"),
-    ("3-4", "3–4 раза в неделю"),
-    ("5+", "5+ раз в неделю"),
-]
-
-
-def _frequency_kb(prefix: str) -> InlineKeyboardMarkup:
+def _row_kb(prefix: str, labels: dict) -> InlineKeyboardMarkup:
+    """All buttons in one row."""
     return InlineKeyboardMarkup(
-        inline_keyboard=[[InlineKeyboardButton(text=label, callback_data=f"{prefix}:{key}")] for key, label in FREQUENCY_LABELS]
+        inline_keyboard=[[InlineKeyboardButton(text=label, callback_data=f"{prefix}:{key}") for key, label in labels.items()]]
     )
 
 
-STRENGTH_KB = _frequency_kb("strength")
-CARDIO_KB = _frequency_kb("cardio")
+def _column_kb(prefix: str, labels: dict) -> InlineKeyboardMarkup:
+    """One button per row."""
+    return InlineKeyboardMarkup(
+        inline_keyboard=[[InlineKeyboardButton(text=label, callback_data=f"{prefix}:{key}")] for key, label in labels.items()]
+    )
 
-STEPS_LABELS = [
-    ("<5000", "Меньше 5 000"),
-    ("5000-10000", "5 000 – 10 000"),
-    ("10000-15000", "10 000 – 15 000"),
-    ("15000+", "Больше 15 000"),
-]
-STEPS_KB = InlineKeyboardMarkup(
-    inline_keyboard=[[InlineKeyboardButton(text=label, callback_data=f"steps:{key}")] for key, label in STEPS_LABELS]
-)
 
-GOAL_KB = InlineKeyboardMarkup(
-    inline_keyboard=[[
-        InlineKeyboardButton(text="Поддержание веса", callback_data="goal:maintain"),
-        InlineKeyboardButton(text="Похудение", callback_data="goal:lose"),
-        InlineKeyboardButton(text="Набор массы", callback_data="goal:gain"),
-    ]]
-)
+def share_meal_kb(t: dict) -> InlineKeyboardMarkup:
+    return InlineKeyboardMarkup(
+        inline_keyboard=[[InlineKeyboardButton(text=t["share_meal_btn"], callback_data="share_meal")]]
+    )
 
-PACE_KB = InlineKeyboardMarkup(
-    inline_keyboard=[[
-        InlineKeyboardButton(text="Медленный", callback_data="pace:slow"),
-        InlineKeyboardButton(text="Средний", callback_data="pace:medium"),
-        InlineKeyboardButton(text="Быстрый", callback_data="pace:fast"),
-    ]]
-)
 
-SHARE_MEAL_KB = InlineKeyboardMarkup(
-    inline_keyboard=[[InlineKeyboardButton(text="📸 Поделиться едой", callback_data="share_meal")]]
-)
+async def _voice_and_texts(state: FSMContext) -> tuple[dict, dict]:
+    data = await state.get_data()
+    voice = get_voice(data.get("voice", DEFAULT_VOICE))
+    return voice, texts_for(voice)
 
 
 @router.message(CommandStart())
@@ -106,14 +85,21 @@ async def cmd_start(message: Message, state: FSMContext) -> None:
     async with async_session() as session:
         user = await get_or_create_user(session, message.from_user.id, message.from_user.language_code or "ru")
 
-    voice = get_voice(user.voice)
-
     if user.status != "onboarding":
+        voice = get_voice(user.voice)
         await message.answer(voice["welcome_back"].format(quote=f"<b>{random.choice(voice['quotes'])}</b>"))
         return
 
+    # Language (and, for Russian, the theme) comes first — the picker
+    # lives in settings.py and calls begin_onboarding() once it's chosen.
+    await state.set_state(Onboarding.language)
+    await message.answer(LANGUAGE_PROMPT, reply_markup=language_kb())
+
+
+async def begin_onboarding(message: Message, state: FSMContext, voice_name: str) -> None:
+    voice = get_voice(voice_name)
     await state.set_state(Onboarding.gender)
-    await state.update_data(voice=user.voice)
+    await state.update_data(voice=voice_name)
     await message.answer(
         voice["start_intro"].format(quote=f"<b>{random.choice(voice['quotes'])}</b>"),
         reply_markup=build_gender_kb(voice),
@@ -122,127 +108,109 @@ async def cmd_start(message: Message, state: FSMContext) -> None:
 
 @router.callback_query(StateFilter(Onboarding.gender), F.data.startswith("gender:"))
 async def on_gender(callback: CallbackQuery, state: FSMContext) -> None:
-    data = await state.get_data()
-    voice = get_voice(data.get("voice", DEFAULT_VOICE))
+    voice, t = await _voice_and_texts(state)
 
     gender = callback.data.split(":")[1]
     await state.update_data(gender=gender)
     await state.set_state(Onboarding.age)
     await callback.message.edit_text(f"{voice['gender_labels'][gender]}. {voice['confirm']}")
-    await callback.message.answer("Возраст?")
+    await callback.message.answer(t["age_q"])
     await callback.answer()
 
 
 @router.message(StateFilter(Onboarding.age))
 async def on_age(message: Message, state: FSMContext) -> None:
-    data = await state.get_data()
-    voice = get_voice(data.get("voice", DEFAULT_VOICE))
+    voice, t = await _voice_and_texts(state)
 
-    if not message.text.isdigit() or not (10 <= int(message.text) <= 100):
+    if not message.text or not message.text.isdigit() or not (10 <= int(message.text) <= 100):
         await message.answer(voice["age_error"])
         return
     await state.update_data(age=int(message.text))
     await state.set_state(Onboarding.height)
-    await message.answer("Рост, в см?")
+    await message.answer(t["height_q"])
 
 
 @router.message(StateFilter(Onboarding.height))
 async def on_height(message: Message, state: FSMContext) -> None:
-    data = await state.get_data()
-    voice = get_voice(data.get("voice", DEFAULT_VOICE))
+    voice, t = await _voice_and_texts(state)
 
     try:
         height = float(message.text.replace(",", "."))
         assert 100 <= height <= 250
-    except (ValueError, AssertionError):
+    except (ValueError, AssertionError, AttributeError):
         await message.answer(voice["height_error"])
         return
     await state.update_data(height_cm=height)
     await state.set_state(Onboarding.weight)
-    await message.answer("Текущий вес, в кг?")
+    await message.answer(t["weight_q"])
 
 
 @router.message(StateFilter(Onboarding.weight))
 async def on_weight(message: Message, state: FSMContext) -> None:
-    data = await state.get_data()
-    voice = get_voice(data.get("voice", DEFAULT_VOICE))
+    voice, t = await _voice_and_texts(state)
 
     try:
         weight = float(message.text.replace(",", "."))
         assert 30 <= weight <= 300
-    except (ValueError, AssertionError):
+    except (ValueError, AssertionError, AttributeError):
         await message.answer(voice["weight_error"])
         return
     await state.update_data(weight_kg=weight)
     await state.set_state(Onboarding.job_type)
-    await message.answer(voice["activity_intro"], reply_markup=JOB_TYPE_KB)
+    await message.answer(voice["activity_intro"], reply_markup=_row_kb("job", t["job_buttons"]))
 
 
 @router.callback_query(StateFilter(Onboarding.job_type), F.data.startswith("job:"))
 async def on_job_type(callback: CallbackQuery, state: FSMContext) -> None:
-    data = await state.get_data()
-    voice = get_voice(data.get("voice", DEFAULT_VOICE))
+    voice, t = await _voice_and_texts(state)
 
     job_type = callback.data.split(":")[1]
     await state.update_data(job_type=job_type)
     await state.set_state(Onboarding.strength_freq)
     await callback.message.edit_text(voice["confirm"])
-    await callback.message.answer(
-        "Силовые — сколько раз в неделю? Ноль — тоже ответ, но ты знаешь, что это значит.",
-        reply_markup=STRENGTH_KB,
-    )
+    await callback.message.answer(t["strength_q"], reply_markup=_column_kb("strength", t["frequency_labels"]))
     await callback.answer()
 
 
 @router.callback_query(StateFilter(Onboarding.strength_freq), F.data.startswith("strength:"))
 async def on_strength_freq(callback: CallbackQuery, state: FSMContext) -> None:
-    data = await state.get_data()
-    voice = get_voice(data.get("voice", DEFAULT_VOICE))
+    voice, t = await _voice_and_texts(state)
 
     strength_freq = callback.data.split(":")[1]
     await state.update_data(strength_freq=strength_freq)
     await state.set_state(Onboarding.cardio_freq)
     await callback.message.edit_text(voice["confirm"])
-    await callback.message.answer(
-        "Кардио — сколько раз в неделю? Без самообмана.",
-        reply_markup=CARDIO_KB,
-    )
+    await callback.message.answer(t["cardio_q"], reply_markup=_column_kb("cardio", t["frequency_labels"]))
     await callback.answer()
 
 
 @router.callback_query(StateFilter(Onboarding.cardio_freq), F.data.startswith("cardio:"))
 async def on_cardio_freq(callback: CallbackQuery, state: FSMContext) -> None:
-    data = await state.get_data()
-    voice = get_voice(data.get("voice", DEFAULT_VOICE))
+    voice, t = await _voice_and_texts(state)
 
     cardio_freq = callback.data.split(":")[1]
     await state.update_data(cardio_freq=cardio_freq)
     await state.set_state(Onboarding.steps)
     await callback.message.edit_text(voice["confirm"])
-    await callback.message.answer(
-        "Шаги в день — в среднем? Честно, не для красоты цифры.",
-        reply_markup=STEPS_KB,
-    )
+    await callback.message.answer(t["steps_q"], reply_markup=_column_kb("steps", t["steps_labels"]))
     await callback.answer()
 
 
 @router.callback_query(StateFilter(Onboarding.steps), F.data.startswith("steps:"))
 async def on_steps(callback: CallbackQuery, state: FSMContext) -> None:
-    data = await state.get_data()
-    voice = get_voice(data.get("voice", DEFAULT_VOICE))
+    voice, t = await _voice_and_texts(state)
 
     steps_bucket = callback.data.split(":")[1]
     await state.update_data(steps_bucket=steps_bucket)
     await state.set_state(Onboarding.goal)
     await callback.message.edit_text(voice["confirm"])
-    await callback.message.answer("Цель. Без розовых очков.", reply_markup=GOAL_KB)
+    await callback.message.answer(t["goal_q"], reply_markup=_row_kb("goal", t["goal_buttons"]))
     await callback.answer()
 
 
 @router.callback_query(StateFilter(Onboarding.goal), F.data.startswith("goal:"))
 async def on_goal(callback: CallbackQuery, state: FSMContext) -> None:
-    data = await state.get_data()
-    voice = get_voice(data.get("voice", DEFAULT_VOICE))
+    voice, t = await _voice_and_texts(state)
 
     goal = callback.data.split(":")[1]
     await state.update_data(goal=goal)
@@ -253,30 +221,28 @@ async def on_goal(callback: CallbackQuery, state: FSMContext) -> None:
         await finish_onboarding(callback.message, state)
     else:
         await state.set_state(Onboarding.target_weight)
-        await callback.message.answer("Целевой вес, в кг?")
+        await callback.message.answer(t["target_weight_q"])
     await callback.answer()
 
 
 @router.message(StateFilter(Onboarding.target_weight))
 async def on_target_weight(message: Message, state: FSMContext) -> None:
-    data = await state.get_data()
-    voice = get_voice(data.get("voice", DEFAULT_VOICE))
+    voice, t = await _voice_and_texts(state)
 
     try:
         target = float(message.text.replace(",", "."))
         assert 30 <= target <= 300
-    except (ValueError, AssertionError):
+    except (ValueError, AssertionError, AttributeError):
         await message.answer(voice["target_weight_error"])
         return
     await state.update_data(target_weight_kg=target)
     await state.set_state(Onboarding.pace)
-    await message.answer("Темп? Выбирай трезво — быстрый не значит лучший.", reply_markup=PACE_KB)
+    await message.answer(t["pace_q"], reply_markup=_row_kb("pace", t["pace_buttons"]))
 
 
 @router.callback_query(StateFilter(Onboarding.pace), F.data.startswith("pace:"))
 async def on_pace(callback: CallbackQuery, state: FSMContext) -> None:
-    data = await state.get_data()
-    voice = get_voice(data.get("voice", DEFAULT_VOICE))
+    voice, _ = await _voice_and_texts(state)
 
     pace = callback.data.split(":")[1]
     await state.update_data(pace=pace)
@@ -287,7 +253,7 @@ async def on_pace(callback: CallbackQuery, state: FSMContext) -> None:
 
 async def finish_onboarding(message: Message, state: FSMContext) -> None:
     data = await state.get_data()
-    voice = get_voice(data.get("voice", DEFAULT_VOICE))
+    voice, t = await _voice_and_texts(state)
 
     bmr = calculate_bmr(data["gender"], data["weight_kg"], data["height_cm"], data["age"])
     activity_coefficient = calculate_activity_coefficient(
@@ -323,12 +289,9 @@ async def finish_onboarding(message: Message, state: FSMContext) -> None:
     await state.clear()
     await message.answer(
         f"{voice['final_summary_lead']}\n\n"
-        f"🔥 Калории: {target_calories} ккал\n"
-        f"🥩 Белки: {macros['protein_g']} г\n"
-        f"🧈 Жиры: {macros['fat_g']} г\n"
-        f"🍞 Углеводы: {macros['carbs_g']} г\n"
-        f"💧 Вода: {water_ml} мл\n\n"
+        f"{t['macros_block'].format(calories=target_calories, **macros)}\n"
+        f"{t['water_line'].format(water_ml=water_ml)}\n\n"
         f"<b>{random.choice(voice['quotes'])}</b>\n\n"
         f"{voice['final_summary_tail']}",
-        reply_markup=SHARE_MEAL_KB,
+        reply_markup=share_meal_kb(t),
     )
