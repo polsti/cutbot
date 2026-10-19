@@ -17,6 +17,7 @@ from bot.services.calculations import (
 )
 from bot.services.profiles import save_profile
 from bot.services.users import get_or_create_user, mark_active
+from bot.services.weights import add_weight_entry
 from bot.texts import LANGUAGE_LABELS, LANGUAGE_PROMPT, texts_for
 from bot.voices import DEFAULT_VOICE, get_voice
 
@@ -54,7 +55,7 @@ def build_gender_kb(voice: dict) -> InlineKeyboardMarkup:
     )
 
 
-def _row_kb(prefix: str, labels: dict) -> InlineKeyboardMarkup:
+def row_kb(prefix: str, labels: dict) -> InlineKeyboardMarkup:
     """All buttons in one row."""
     return InlineKeyboardMarkup(
         inline_keyboard=[[InlineKeyboardButton(text=label, callback_data=f"{prefix}:{key}") for key, label in labels.items()]]
@@ -157,7 +158,7 @@ async def on_weight(message: Message, state: FSMContext) -> None:
         return
     await state.update_data(weight_kg=weight)
     await state.set_state(Onboarding.job_type)
-    await message.answer(voice["activity_intro"], reply_markup=_row_kb("job", t["job_buttons"]))
+    await message.answer(voice["activity_intro"], reply_markup=row_kb("job", t["job_buttons"]))
 
 
 @router.callback_query(StateFilter(Onboarding.job_type), F.data.startswith("job:"))
@@ -204,7 +205,7 @@ async def on_steps(callback: CallbackQuery, state: FSMContext) -> None:
     await state.update_data(steps_bucket=steps_bucket)
     await state.set_state(Onboarding.goal)
     await callback.message.edit_text(voice["confirm"])
-    await callback.message.answer(t["goal_q"], reply_markup=_row_kb("goal", t["goal_buttons"]))
+    await callback.message.answer(t["goal_q"], reply_markup=row_kb("goal", t["goal_buttons"]))
     await callback.answer()
 
 
@@ -237,7 +238,7 @@ async def on_target_weight(message: Message, state: FSMContext) -> None:
         return
     await state.update_data(target_weight_kg=target)
     await state.set_state(Onboarding.pace)
-    await message.answer(t["pace_q"], reply_markup=_row_kb("pace", t["pace_buttons"]))
+    await message.answer(t["pace_q"], reply_markup=row_kb("pace", t["pace_buttons"]))
 
 
 @router.callback_query(StateFilter(Onboarding.pace), F.data.startswith("pace:"))
@@ -280,10 +281,12 @@ async def finish_onboarding(message: Message, state: FSMContext) -> None:
             activity_coefficient=activity_coefficient,
             goal=data["goal"],
             pace=data.get("pace"),
+            target_weight_kg=data.get("target_weight_kg") if data["goal"] != "maintain" else None,
             target_calories=target_calories,
             **macros,
             water_ml=water_ml,
         )
+        await add_weight_entry(session, user.id, data["weight_kg"])  # starting point for /weight progress
         await mark_active(session, user.id)
 
     await state.clear()

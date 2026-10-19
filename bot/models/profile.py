@@ -23,6 +23,7 @@ class Profile(Base):
     activity_coefficient: Mapped[float] = mapped_column(Float)
     goal: Mapped[str] = mapped_column(String(10))  # maintain / lose / gain
     pace: Mapped[str | None] = mapped_column(String(10), nullable=True)
+    target_weight_kg: Mapped[float | None] = mapped_column(Float, nullable=True)  # None for "maintain"
 
     target_calories: Mapped[int] = mapped_column(Integer)
     protein_g: Mapped[int] = mapped_column(Integer)
