@@ -15,6 +15,8 @@ TEXTS = {
         "/help — this help\n\n"
         "More (/fridge etc.) is coming."
     ),
+    "fallback": "Didn't get that 🤔 Send a food photo to log a meal, or type /help.",
+    "button_expired": "This button has expired — the bot restarted. Start again: /add",
     # onboarding
     "age_q": "Age?",
     "height_q": "Height, in cm?",
