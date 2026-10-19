@@ -6,6 +6,7 @@ from aiogram.client.default import DefaultBotProperties
 from aiogram.enums import ParseMode
 
 from bot.config import settings
+from bot.handlers.fallback import router as fallback_router
 from bot.handlers.meals import router as meals_router
 from bot.handlers.onboarding import router as onboarding_router
 from bot.handlers.settings import router as settings_router
@@ -22,6 +23,7 @@ async def main() -> None:
     dp.include_router(meals_router)
     dp.include_router(settings_router)
     dp.include_router(start_router)
+    dp.include_router(fallback_router)  # must stay last
 
     health_runner = await start_health_server(settings.port)
     try:
