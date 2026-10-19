@@ -1,12 +1,15 @@
+import asyncio
+
 from aiogram import F, Router
 from aiogram.filters import Command, StateFilter
 from aiogram.fsm.context import FSMContext
 from aiogram.fsm.state import State, StatesGroup
-from aiogram.types import CallbackQuery, Message
+from aiogram.types import BufferedInputFile, CallbackQuery, Message
 
 from bot.handlers.onboarding import row_kb
 from bot.models.base import async_session
 from bot.services.calculations import calculate_norms, weight_progress
+from bot.services.charts import render_weight_chart
 from bot.services.profiles import get_profile, save_profile
 from bot.services.users import get_or_create_user
 from bot.services.weights import add_weight_entry, ensure_start_entry, get_weight_entries
@@ -101,6 +104,48 @@ async def on_weight_value(message: Message, state: FSMContext) -> None:
         lines.append(t["weigh_left"].format(target=fmt_kg(target), left=fmt_kg(p["left"])))
 
     await message.answer("\n".join(lines))
+
+
+# --- /progress: weight chart over all time --------------------------------
+
+@router.message(Command("progress"))
+async def cmd_progress(message: Message) -> None:
+    async with async_session() as session:
+        user = await get_or_create_user(session, message.from_user.id)
+        await ensure_start_entry(session, user.id)
+        entries = await get_weight_entries(session, user.id)
+        profile = await get_profile(session, user.id)
+    voice = get_voice(user.voice)
+    t = texts_for(voice)
+
+    if profile is None or not entries:
+        await message.answer(voice["today_no_profile"])
+        return
+
+    weights = [e.weight_kg for e in entries]
+    target = profile.target_weight_kg if profile.goal != "maintain" else None
+    p = weight_progress(weights, profile.goal, target)
+
+    if len(entries) == 1:
+        await message.answer(t["progress_first"].format(current=fmt_kg(weights[0])))
+        return
+
+    lines = [t["progress_summary"].format(
+        start=fmt_kg(weights[0]),
+        start_date=entries[0].recorded_at.strftime("%d.%m.%Y"),
+        current=fmt_kg(weights[-1]),
+        change=p["since_start"],
+        days=(entries[-1].recorded_at - entries[0].recorded_at).days,
+    )]
+    if p["reached"]:
+        lines.append(t["weigh_reached"].format(target=fmt_kg(target)))
+    elif p["left"] is not None:
+        lines.append(t["weigh_left"].format(target=fmt_kg(target), left=fmt_kg(p["left"])))
+
+    png = await asyncio.to_thread(
+        render_weight_chart, [e.recorded_at for e in entries], weights, target, t["chart_weight"], t["chart_target"],
+    )
+    await message.answer_photo(BufferedInputFile(png, filename="progress.png"), caption="\n\n".join(lines))
 
 
 # --- /goal: change goal + target, recalculate the norm ---------------------

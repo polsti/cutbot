@@ -12,6 +12,7 @@ TEXTS = {
         "/today — підсумок за сьогодні\n"
         "/stats — за останні 7 днів\n"
         "/weight — записати вагу\n"
+        "/progress — графік ваги\n"
         "/goal — змінити мету\n"
         "/reminders — нагадування про зважування\n"
         "/settings — мова і стиль спілкування\n"
@@ -73,6 +74,10 @@ TEXTS = {
     "weigh_good": "Чудовий прогрес 💪",
     "weigh_left": "До мети {target} кг залишилось {left} кг 🔥",
     "weigh_reached": "🎉 Мету {target} кг досягнуто! Можна змінити мету на підтримку або набір — /goal",
+    "chart_weight": "Вага",
+    "chart_target": "Мета",
+    "progress_summary": "📈 Старт: {start} кг ({start_date})\nЗараз: {current} кг\nЗміна: {change:+.1f} кг за {days} дн.",
+    "progress_first": "📈 Поки один запис: {current} кг. Записуй вагу через /weight — і тут зʼявиться графік.",
     "goal_intro": "Обери нову мету:",
     "goal_updated": "Мету оновлено ✅ Нова норма (за вагою {weight} кг):",
     # weigh-in reminders
