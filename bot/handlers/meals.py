@@ -1,3 +1,5 @@
+import asyncio
+
 from aiogram import F, Router
 from aiogram.filters import Command, StateFilter
 from aiogram.fsm.context import FSMContext
@@ -63,6 +65,16 @@ async def start_meal_log(telegram_id: int, message: Message, state: FSMContext) 
     await message.answer(voice["share_meal_prompt"])
 
 
+@router.message(StateFilter(None), F.photo)
+async def on_photo_without_add(message: Message, state: FSMContext) -> None:
+    """A food photo sent straight away, without /add first — just log it."""
+    async with async_session() as session:
+        user = await get_or_create_user(session, message.from_user.id)
+    await state.set_state(MealLog.waiting_photo)
+    await state.update_data(voice=user.voice)
+    await on_photo(message, state)
+
+
 @router.message(StateFilter(MealLog.waiting_photo), F.photo)
 async def on_photo(message: Message, state: FSMContext) -> None:
     data = await state.get_data()
@@ -105,7 +117,11 @@ async def run_analysis(message: Message, state: FSMContext, description: str | N
     thinking = await message.answer(voice["thinking"])
 
     try:
-        result = analyze_meal_photo(data["photo_bytes"], "image/jpeg", description, t["gemini_language"])
+        # Gemini call is blocking (with retries, up to a few minutes) — run it in a
+        # thread so the bot keeps answering everyone else meanwhile.
+        result = await asyncio.to_thread(
+            analyze_meal_photo, data["photo_bytes"], "image/jpeg", description, t["gemini_language"]
+        )
     except Exception:
         await thinking.edit_text(voice["vision_error"])
         await state.set_state(MealLog.waiting_photo)
