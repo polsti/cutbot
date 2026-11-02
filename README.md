@@ -22,3 +22,7 @@ One branch per build phase (`phase-N-<name>`), merged into `main` once that phas
 docker build -t cutbot .
 docker run --env-file .env cutbot
 ```
+
+## Link to the bot 
+in Telegram : @Cut_track_bot
+https://t.me/Cut_track_bot
